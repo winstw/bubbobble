@@ -11,6 +11,7 @@
 #define NEW_LEVEL_DELAY 30
 //#define DEFAULT_FONT GLUT_BITMAP_HELVETICA_18
 #define DEFAULT_FONT GLUT_BITMAP_TIMES_ROMAN_24
+#define DEFAULT_FONT_HEIGHT 18
 #define TIMER_SCREEN_DELAY 100
 
 
@@ -106,7 +107,7 @@ void init(){
 
   reset_level();
   create_entities();
-  init_wall_tex();
+  //  init_wall_tex();
   
 
 }
@@ -176,31 +177,28 @@ void game(bool pause){
   */
 
 
-  //  int level_delay = LEVEL_DELAY;
-
-
-  
-  if (getEnemiesAlive() == 0){
+  if (getEnemiesAlive() == 0){ // Ennemis tous morts et "mangés" ==> niveau suivant
     
     init_entities();
     next_level();
     level_delay = NEW_LEVEL_DELAY;
-    //        display_string(GLUT_BITMAP_HELVETICA_18, get_level(), WINDOW_HEIGHT/2, WINDOW_WIDTH/2 - 9 );
-    
-
   }
-  if(game_slide > 0){
-    game_slide -= 10;
-    //    char* levelString;
-    //    sprintf(levelString, "%i", level);    
 
-  }
+
   
-  glColor3f(0.0F, 0.0F,1.0F);    
+  if(game_slide > 0){ // Permet l'effet de glissement au début de la partie
+    game_slide -= 10;
+  }
+
+
+  
+  glColor3f(1.0F, 1.0F,1.0F);
+  glEnable(GL_TEXTURE_2D);
+
   glMatrixMode(GL_MODELVIEW); 
   glLoadIdentity();
 
-  if (level_delay > 0){
+  if (level_delay > 0){ // Affichage du niveau à chaque nouveau
     display_level();
     level_delay -= 1;
   }
@@ -227,40 +225,33 @@ void display_status(void){
   /* sous fonction nécessaire à game() qui affiche les informations
      sur le jeu en cours : SCORE, VIES RESTANTES, NIVEAU.
   */
+  
   int pos_x;
+
   char score[sizeof(int) * 4 + 1];
   sprintf(score, "%d", get_score());
+
   char level[sizeof(int) * 4 + 1];
   sprintf(level, "%d", get_level());
   
  
-  display_string(DEFAULT_FONT, "VIES : ", 0, 18); //18 est la hauteur de la police
- glutBitmapCharacter(DEFAULT_FONT, get_lives());
+  display_string(DEFAULT_FONT, "VIES : ", 0, DEFAULT_FONT_HEIGHT); //18 est la hauteur de la police
+  glutBitmapCharacter(DEFAULT_FONT, get_lives());
  
- pos_x = display_string(DEFAULT_FONT, " SCORE : ", WINDOW_WIDTH/2 - 50, 18);
- pos_x =  display_string(DEFAULT_FONT, score, pos_x, 18);
+  pos_x = display_centered_string(" SCORE : ", DEFAULT_FONT_HEIGHT);
+  pos_x =  display_string(DEFAULT_FONT, score, pos_x, DEFAULT_FONT_HEIGHT);
 
-  pos_x =  display_string(DEFAULT_FONT, " LEVEL : ", WINDOW_WIDTH - 120, 18);
-
- 
- pos_x =  display_string(DEFAULT_FONT, level, pos_x, 18);
+  pos_x =  display_string(DEFAULT_FONT, " LEVEL : ", WINDOW_WIDTH - 120, DEFAULT_FONT_HEIGHT);
+  pos_x =  display_string(DEFAULT_FONT, level, pos_x, DEFAULT_FONT_HEIGHT);
 
 }
 
 
 
-/* void game_over_screen(){ */
-/*   /\*  Affiche un écran quand le joueur a perdu une partie */
-/*    *\/ */
-/*   if (game_over_delay == 0) */
-/*     game_state = MENU; */
 
-/*   glColor3f(0.0F, 0.0F,1.0F); */
 
-/*   display_centered_string("GAME OVER", WINDOW_HEIGHT/3); //18 est la hauteur de la police */
-/*   game_over_delay--; */
 
-/* } */
+
 
 void timer_screen(char *msg){
   /*  Affiche un écran quand le joueur a perdu une partie

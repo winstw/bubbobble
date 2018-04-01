@@ -7,21 +7,43 @@
 
 #include "map.h"
 #include "tga_small.h"
-#define NUMBER_LEVELS 3
+#define NUMBER_LEVELS 5
+
+
+
 
 /* -------------------- */
+/*
+SOURCES : 
+Niveaux du jeu : http://www.adamdawes.com/retrogaming/bbguide/index.html
 
-/* http://www.idevgames.com/forums/thread-3374.html */
+Chargement textures :  http://www.idevgames.com/forums/thread-3374.html */
 
 
 /* /\* --------------------------------------- *\/ */
 
-char* levels_tab[] = {"levels/map.txt", "levels/map2.txt", "levels/map3.txt"};
+char* levels_tab[] = {"levels/map.txt",
+		      "levels/map2.txt",
+		      "levels/map3.txt",
+                      "levels/map4.txt",
+                      "levels/map5.txt"};
+char* textures_tab[] = {"images/level1.tga",
+			"images/level2.tga",
+			"images/level3.tga",
+			"images/level4.tga",
+			"images/level5.tga",
+			"images/level6.tga",
+			"images/level7.tga",
+			"images/level8.tga",
+			"images/level9.tga",
+			"images/level10.tga"};
+			
+
 static int level = 0;
 
 
 void draw_wall(int x, int y);        // dessine une case de mur, reçoit en argument les coordonnées du coin haut-gauche de la case
-void init_wall_tex(void);
+//void init_wall_tex(void);
 void init_level(int level);
 
 
@@ -33,6 +55,7 @@ char current_map[MAP_HEIGHT][MAP_WIDTH] = {0};
 
 
 int next_level(){
+  /* Passe au niveau suivant  */
   if (level < NUMBER_LEVELS -1)
     level++;
   init_level(level);
@@ -40,14 +63,11 @@ int next_level(){
 }
 
 int get_level(){
-
+  /* Renvoie le numero du niveau courant */
 
   return level+1;
 }
 
-/* int get_level(){ */
-/*   return level; */
-/* } */
 
   
 void reset_level(){
@@ -57,27 +77,8 @@ void reset_level(){
 
 void init_level(int level){
   read_map(levels_tab[level]);
+  texWall = loadTGATexture(textures_tab[level]);
 }
-
-void init_wall_tex(void)
-{
-  texWall = loadTGATexture ("images/wall.tga");
-  /* if (!texWall) */
-  /*   fprintf(stderr, "Probleme chargement texWall"); */
-  /*   exit (EXIT_FAILURE); */
-    
-}
-
-
-
-/* void print_map() */
-/* { */
-/*   for (int i=0; i < MAP_HEIGHT ; i++){ */
-/*    for (int j = 0; j < MAP_WIDTH; j++) */
-/*      printf("%c ", current_map[i][j]); */
-/*    printf("\n"); */
-/*   } */
-/* } */
 
 
 void read_map(char * file){
@@ -151,7 +152,6 @@ void draw_map(){
   /* texWall = loadTGATexture ("images/wall.tga"); */
   /* if (!texWall) */
   /*   exit (EXIT_FAILURE); */
-  
 
  for (int i=0; i < MAP_HEIGHT ; i++){
    for (int j = 0; j < MAP_WIDTH; j++){
@@ -160,20 +160,6 @@ void draw_map(){
      else if (current_map[i][j] == '=')
        draw_wall( j * CELL_SIZE, i * CELL_SIZE);
    }
-
-
-   /* glDisable(GL_TEXTURE_2D); */
-   
-        /*   // initialiser le bubble avec sa position à la lecture de la map (bonne idee ?) */
-
-     /* else if (map[i][j] == 'b'){ */
-     /*   bubptr->x = j * CELL_SIZE; */
-     /*   bubptr->y = i * CELL_SIZE; */
-     /* } */
-   
-	 
-     /* else if(map[i][j] == '*') */
-       /* draw */
  }
 }
 

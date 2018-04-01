@@ -282,6 +282,8 @@ void init_entity(Entity* e){
   e -> bubbledTo = NULL;
 
   if (e->drag){
+    
+    
     if (e-> state != ALIVE){
       e -> state = ALIVE;
       e-> score = 0;
@@ -289,17 +291,18 @@ void init_entity(Entity* e){
       e -> x = DRAGON_START_X;
       e -> y = DRAGON_START_Y;
 
-    //    e-> score = 0;
-    e-> lives = NUMBER_LIVES;
+      
+      if (e -> lives == 0)
+	e-> lives = NUMBER_LIVES; // evite de rajouter des vies entre les niveaux
     e -> direction = 'R';
     e -> moving = false;
   } else {
     e -> texture_id = tex_bad;
-    e -> x = ENEMY_START_X + ENTITY_SIZE * enemies_alive ;
+    e -> x = ENEMY_START_X + ENTITY_SIZE * enemies_alive ; // décale les ennemis
     e -> y = ENEMY_START_Y;
 
 
-    if (e->state != ALIVE){
+    if (e->state == DEAD){
       e->state = ALIVE;
       enemies_alive += 1;
     }
@@ -595,8 +598,11 @@ void kill_dragon(void){
     
     game_over();
     /* init_entities(); */
-    entities -> score = 0;
+    //    entities -> score = 0;
+    //    enemies_alive = 0;
+
     init_entities();
+    clean_bubbles(entities);
     entities -> lives = NUMBER_LIVES;
     
   }
@@ -733,23 +739,31 @@ bool isOnSolidGround(Entity* e){
 void gravity(Entity *e){
   /* This function which runs continuously checks if a jump have been initiated
      and effectively perform it by updating entity's position if necessary. 
-    If not, it checks if entity is on a solid ground. Entity fall otherwise.
+    If not, it checks if entity is on a solid ground. Entity falls otherwise.
   */
 
-    
+  
+  // To pass through the "holes" in border walls
+  if (e-> y < CELL_SIZE)
+    e-> y = WINDOW_HEIGHT ;//-CELL_SIZE;
+  else if (e-> y > WINDOW_HEIGHT){
+    e->y = CELL_SIZE+ MOVE_V;
+  }
+
+
+  
   if(e->jump_stage > 0){
-    
+    if (!isWall(e->x, e->y - ENTITY_SIZE) 
+	&& !isWall(e->x - ENTITY_SIZE/2, e->y - ENTITY_SIZE)
+	&& !isWall(e->x + ENTITY_SIZE/2, e->y-ENTITY_SIZE)){
     e->y -= MOVE_V;
     e->jump_stage--;
+    } else e-> jump_stage = 0;
   }
   // Gravity doesn't apply during the jump, avoids to substract and add the same thing
 		       
   else if (!isOnSolidGround(e))
      e->y += MOVE_V;
-
-  //evite les dépassements en hauteur
-  if (e-> y < 2*CELL_SIZE)
-    e-> y = WINDOW_HEIGHT -CELL_SIZE;
 
 
 }
@@ -847,6 +861,14 @@ void move_bubble(Bubble *b){
        b -> y -= BUBBLE_V;
      b->lifespan --;
        }
+
+     // To pass through the "holes" in border walls
+  if (b-> y < CELL_SIZE)
+    b-> y = WINDOW_HEIGHT ;//-CELL_SIZE;
+  else if (b-> y > WINDOW_HEIGHT){
+    b->y = CELL_SIZE+ BUBBLE_V;
+  }
+
 }
 
 

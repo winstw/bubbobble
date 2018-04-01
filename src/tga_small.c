@@ -228,7 +228,7 @@ loadTGATexture (const char *filename)
 
       
       glGetIntegerv (GL_UNPACK_ALIGNMENT, &alignment);
-      glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+      //      glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
 #if 1
 
@@ -236,6 +236,10 @@ loadTGATexture (const char *filename)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       
+
+ /* gluBuild2DMipmaps (GL_TEXTURE_2D, tga_tex->internalFormat, */
+ /* 			 tga_tex->width, tga_tex->height, */
+ /* 			 tga_tex->format, GL_UNSIGNED_BYTE, tga_tex->texels); */
 
       
       glTexImage2D (GL_TEXTURE_2D, 0, tga_tex->internalFormat,
