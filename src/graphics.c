@@ -9,8 +9,8 @@
 #define BUTTON_HEIGHT WINDOW_HEIGHT/7.4 
 #define TIMER_DELAY 25
 #define NEW_LEVEL_DELAY 30
-//#define DEFAULT_FONT GLUT_BITMAP_HELVETICA_18
-#define DEFAULT_FONT GLUT_BITMAP_TIMES_ROMAN_24
+#define DEFAULT_FONT GLUT_BITMAP_HELVETICA_18
+
 #define DEFAULT_FONT_HEIGHT 18
 #define TIMER_SCREEN_DELAY 100
 
@@ -20,6 +20,7 @@ typedef enum{
   MENU,
   PLAYING,
   GAME_OVER,
+  GAME_WON,
   INSTRUCTIONS,
   SHORTCUTS,
   CHOOSE_LEVEL,
@@ -45,9 +46,14 @@ void game_over_screen(void);
 int display_string(void *font, char *string, int pos_x, int pos_y);
 int length_string(char *string);
 void timer_screen(char *string);
+void game_won(void);
+void shortcuts_screen(void);
+
+
 
 
 int display_centered_string(char *string, int pos_y){
+
   
   
   /* Affiche un texte centré horizontalement à l'écran 
@@ -137,12 +143,18 @@ void display(void){
 	timer_screen("GAME OVER");
 	//	game_over_screen();
       	break;
+      case GAME_WON:
+	timer_screen("CONGRATULATIONS, YOU FINISHED THE GAME!");
+	break;
       case INSTRUCTIONS:
 	//timer_screen(INSTRUCTIONS);
 	break;
-  default:
-    menu_game();
-    break;
+      case SHORTCUTS:
+	shortcuts_screen();
+	break;
+      default:
+	menu_game();
+	break;
 
   }
     glFlush() ;
@@ -154,14 +166,17 @@ void display(void){
 void display_level(void){
   /* Affiche à l'écran le niveau à chaque passage vers un supérieur
    */
- 
+
+
+  glColor3f(1.0F, 1.0F,1.0F);
+    
   char level[sizeof(int) * 4 + 1];
   sprintf(level, "%d", get_level());
-  int pos_x = WINDOW_WIDTH / 2;
-  pos_x =  display_string(DEFAULT_FONT, " LEVEL ", pos_x, 300);
+  int pos_y = WINDOW_HEIGHT / 6;
+  int pos_x =  display_centered_string(" LEVEL ", pos_y);
 
  
- pos_x =  display_string(DEFAULT_FONT, level, pos_x, 300);
+ pos_x =  display_string(DEFAULT_FONT, level, pos_x, pos_y);
 
   
 }
@@ -176,7 +191,8 @@ void game(bool pause){
      le statut.
   */
 
-
+  if (get_level() > 0){
+    
   if (getEnemiesAlive() == 0){ // Ennemis tous morts et "mangés" ==> niveau suivant
     
     init_entities();
@@ -185,12 +201,20 @@ void game(bool pause){
   }
 
 
+    
+
+
+
   
   if(game_slide > 0){ // Permet l'effet de glissement au début de la partie
     game_slide -= 10;
   }
 
 
+  if (level_delay > 0){ // Affichage du niveau
+    display_level();
+    level_delay -= 1;
+  }
   
   glColor3f(1.0F, 1.0F,1.0F);
   glEnable(GL_TEXTURE_2D);
@@ -198,10 +222,6 @@ void game(bool pause){
   glMatrixMode(GL_MODELVIEW); 
   glLoadIdentity();
 
-  if (level_delay > 0){ // Affichage du niveau à chaque nouveau
-    display_level();
-    level_delay -= 1;
-  }
 
   
   glTranslatef(0, game_slide, 0);
@@ -216,6 +236,9 @@ void game(bool pause){
     glColor3f(1, 1, 1);
     display_centered_string("PAUSE - 'P' POUR REPRENDRE", 100); //18 est la hauteur de la police
   }
+
+  
+  } else game_won();
 
 }
 
@@ -249,7 +272,24 @@ void display_status(void){
 
 
 
+void shortcuts_screen(){
+  glColor3f(0.0F, 0.0F,1.0F);
+  int pos_y = WINDOW_HEIGHT/3;
+  display_centered_string("TOUCHES CLAVIER", pos_y);
+  pos_y += 30;
+  display_centered_string("LANCER UNE BULLE : F", pos_y);
+  pos_y += 30;
+  display_centered_string("SAUTER : ESPACE", pos_y);
+  pos_y += 30;
+  display_centered_string("DEPLACEMENT : GAUCHE/DROITE", pos_y);
+  pos_y += 30;
+  display_centered_string("PAUSE : P", pos_y);
 
+  pos_y += 100;
+  
+  display_centered_string("REVENIR AU MENU : ESC", pos_y);
+  
+}
 
 
 
@@ -295,12 +335,12 @@ void menu_game(){
   glColor3f(0.0F, 0.0F,1.0F);
   pos_y = BUTTON_HEIGHT * 0.8;
 
-  char *button_messages[6] = {"PRESS 'P' TO PLAY GAME",
-			"INSTRUCTIONS",
-			"CHOOSE DIFFICULTY",
-			"SHORTCUTS",
-			"RULES",
-			"PRESS ESC TO EXIT",
+  char *button_messages[6] = {"NOUVELLE PARTIE (P)",
+			      "SCORES",
+			"INSTRUCTIONS (I)",
+			"DIFFICULTE",
+			"RACCOURCIS (R)",
+			"QUITTER (ESC)",
 			
   };
 
@@ -391,6 +431,11 @@ void keyboard_down(unsigned char key, int x, int y){
 	
     break;
 
+  case 'r':
+    if (game_state == MENU)
+      game_state = SHORTCUTS;
+    break;
+    
   case 'f':
     launch_bubble();
     break;
@@ -398,7 +443,7 @@ void keyboard_down(unsigned char key, int x, int y){
   case 27:
     if (game_state == MENU)
         exit(0);
-    if (game_state == GAME_OVER)
+    if (game_state == GAME_OVER || game_state == SHORTCUTS)
       game_state = MENU;
 
     
@@ -432,6 +477,15 @@ void timer_game(int time){/* opengldoc.pdf*/
 
 }
 
+
+void game_won(void){
+   game_state = GAME_WON;
+   game_slide = WINDOW_HEIGHT;
+   screen_delay = TIMER_SCREEN_DELAY;
+
+   reset_level();
+
+}
 
 
  void game_over(void){

@@ -12,7 +12,8 @@
 #define DRAGON_START_Y (MAP_HEIGHT-1)*CELL_SIZE
 #define ENEMY_START_X WINDOW_WIDTH / 2
 #define ENEMY_START_Y 4*CELL_SIZE
-#define NUMBER_ENEMIES 4
+#define NUMBER_ENEMIES 1
+
 
 #define BUBBLE_LIFESPAN 100
 #define NUMBER_LIVES 3
@@ -37,7 +38,10 @@
 #define MOVE_H CELL_SIZE/8
 
 #define BUBBLE_V CELL_SIZE/4
-#define BUBBLE_H CELL_SIZE/8
+
+#define BUBBLE_H 1// CELL_SIZE/8
+
+
 
 typedef struct Bubble{
   int x;
@@ -76,10 +80,12 @@ static EntityList list_first = NULL;
 static EntityList list_last = NULL;
 
 
-static int enemies_alive = 0;
-
 GLuint tex_bad_dead;
 GLuint tex_bad;
+
+
+static int enemies_alive = 0;
+
 
 /* -------------------------------- */
 
@@ -88,19 +94,21 @@ static EntityList entities;
 
 /*-----------------------------------*/
 
+
+
 EntityList new_list(void);
 bool is_empty_list(void);
 
 EntityList add_end_list(int x, int y, EntityList l);
-EntityList add_front_list(int x, int y, EntityList l, bool isDragon, GLuint texture_id, char direction);
+EntityList add_front_list(EntityList l, bool isDragon, GLuint texture_id);
 EntityList remove_front_list(EntityList l);
-/* void display_entities_alive(EntityList l); */
+
 void randomize_entity(Entity *e);
 
 
 
 void gravity(Entity *e);
-/* void gravity_drag(); */
+
 
 
 bool isOnSolidGround(Entity* e);
@@ -116,10 +124,10 @@ void kill_dragon(void);
 
 bool touch_any_entity(Entity *e, EntityList l);
 void display_entity(Entity *e);
-/* void display_drag(void); */
+
 
 void move_entity(Entity *e);
-/* void move_drag(); */
+
 
 void jump_entity(Entity *e);
 
@@ -136,9 +144,8 @@ void test_collisions(Entity* e);
 
 void init_entity(Entity* e);
 
-/* Entity *dragptr = NULL; */
 
-
+void clean_bubbles(Entity *e);
 
 int getEnemiesAlive(void){
   return enemies_alive;
@@ -150,6 +157,9 @@ EntityList new_list(void){
 
 
 void create_entities(){
+  /* Cree la liste chainee contenant le dragon et les ennemis
+   */
+  
   srand(time(NULL));
   entities = new_list();
 
@@ -158,31 +168,20 @@ void create_entities(){
  tex_bad = loadTGATexture("images/enemy.tga");
   GLuint tex_drag = loadTGATexture("images/drag.tga");
   tex_bad_dead = loadTGATexture("images/banana.tga");
-    /* if (!tex_bad){ */
-
-  /*   fprintf(stderr, "probleme chargement texture\n"); */
-  /*       exit(EXIT_FAILURE); */
-  /* } */
 
 
  for (int i = NUMBER_ENEMIES; i > 0; i--){
    
-   entities = add_front_list(ENEMY_START_X + i * ENTITY_SIZE , ENEMY_START_Y, entities, false, tex_bad, 'L');
+   entities = add_front_list(entities, false, tex_bad);
  
- } entities = add_front_list(DRAGON_START_X, DRAGON_START_Y, entities, true, tex_drag, 'R');
+ } entities = add_front_list(entities, true, tex_drag);
  init_entities();
 
- /* entities_pointer = entities; */
+
 
 }
 
 
-bool is_empty_list(void){
-  /* necessaire ? */
-if (list_first == NULL && list_last == NULL)
-  return true;
-return false;
-}
 
 #if 0
 EntityList add_end_list(int x, int y, EntityList l){
@@ -221,7 +220,7 @@ char get_random_direction(void){
   return direction;
 }
 
-EntityList add_front_list(int x, int y, EntityList l, bool isDragon, GLuint texture_id, char dir){
+EntityList add_front_list(EntityList l, bool isDragon, GLuint texture_id){
   Entity *new_entity;
   new_entity = malloc(sizeof(*new_entity));
   if (new_entity == NULL){
@@ -229,47 +228,33 @@ EntityList add_front_list(int x, int y, EntityList l, bool isDragon, GLuint text
     exit(EXIT_FAILURE);
   }
 
-
-  // new_entity -> x = x; 
-  //  new_entity -> y = y; 
-  /* //  new_entity -> direction = dir; */
-  /* new_entity -> jump_stage = 0; */
-  /* new_entity -> moving = true; */
-        new_entity -> state = DEAD;
+ new_entity -> state = DEAD;
  new_entity -> drag = isDragon;
-  /* new_entity -> state = 0; */
+ new_entity -> bubbles = NULL;
+ new_entity -> bubbledTo = NULL;
  new_entity -> texture_id = texture_id; 
-   new_entity -> next = l; 
-   // new_entity -> bubbles = NULL; 
-   // new_entity -> bubbledTo = NULL;
+ new_entity -> next = l; 
 
- // if (isDragon){
-  /*   new_entity-> score = 0; */
-  /*   new_entity-> lives = NUMBER_LIVES; */
-  /*   new_entity -> direction = 'R'; */
-  /*   new_entity -> moving = false; */
-  /* } else { */
-  /*   enemies_alive += 1; */
-  /* } */
-  /* if (list_last == NULL) */
-  /*   list_last = new_entity; */
-  
-  /* list_first = new_entity; */
-  /* //  enemies_alive++; */
   return new_entity;
 }
 
 
 void init_entities(){
-  Entity *l = entities;
+  /* Appelle init_entity() pour toutes les entités de la liste
+   */
+  
+  Entity *l = entities -> next;
   while (l != NULL){
     init_entity(l);
     l = l->next;
   }
+  init_entity(entities); // termine par le dragon, evite le risque de supprimer une bulle pointee par un ennemi.
+  
 }
 
 void init_entity(Entity* e){
-
+  /* Remet l'entite dans son etat initial entre les niveaux ou parties
+   */
 
   e -> direction = 'R';
   e -> jump_stage = 0;
@@ -278,12 +263,14 @@ void init_entity(Entity* e){
 
   //  e -> texture_id = texture_id;
   //  e -> next = l;
-  e -> bubbles = NULL;
+
   e -> bubbledTo = NULL;
 
   if (e->drag){
-    
-    
+    if (e -> bubbles != NULL){
+      clean_bubbles(e);
+      e -> bubbles = NULL;
+    }
     if (e-> state != ALIVE){
       e -> state = ALIVE;
       e-> score = 0;
@@ -310,6 +297,8 @@ void init_entity(Entity* e){
 }
 
 EntityList remove_front_list(EntityList l){
+  /* Retire un élément de la liste d'entites
+   */
   Entity *temp = NULL;
   if (is_empty_list)
     return NULL;
@@ -334,6 +323,8 @@ EntityList remove_front_list(EntityList l){
 
 
 void randomize_entity(Entity *e){
+  /* Fait sauter l'entité de façon aléatoire 
+   */
   int set_jump;
   set_jump = rand() % 100;
   if (set_jump == 1)
@@ -354,35 +345,32 @@ void set_moving_drag(bool moving){
   entities->moving = moving;
 }
 /* ---------------------- */
-/* ne sert plus a rien si drag est dans la liste */
-void display_drag(){
-  display_entity(entities);
-  
-}
 
 
 void place_dragon(void){
+  /* Replace le dragon à sa position initiale.
+   */
+  
   entities -> y = DRAGON_START_Y;
   entities -> x = DRAGON_START_X;
 
-
-
 }
-
-
-
-
 
 
 
 
 void display_entities(void){
+  /* Cette fonction appelle toutes les fonctions necessaires a l'affichage et au deplacement 
+     des entites ainsi que les interactions entre elles.
+   */
   Entity *l = entities;
   while (l != NULL){
     if ((l->state != DEAD)){
       display_entity(l);
       gravity(l);
       move_entity(l);
+
+
       if (!(l->drag)){
 	test_collisions(l);
 	if (l->state == ALIVE)
@@ -395,93 +383,59 @@ void display_entities(void){
   }
 }
 
+
+
 void display_entity(Entity *e){
+  /* Fonction qui gère l'affichage d'une entite, en fonction de son etat 
+     contenu dans la variable "state", et de sa direction.
+   */
 
-
-  if (e->bubbles != NULL){
+  if (e->bubbles != NULL){             // Appel de l'affichage des bulles
     display_move_bubbles (e->bubbles);
-    //	 display_bubble(e->bubbles);
-      }
-    
-
-
+  }
     
   int invert_texture;           // pour que le personnage soit orienté vers là où il se déplace 
-    if (e->direction == 'L')
-      invert_texture = 1;
-    else invert_texture = 0;
+  if (e->direction == 'L')
+    invert_texture = 1;
+  else invert_texture = 0;
 
 
     
-    glPushMatrix();
+  glPushMatrix();
 
-  
-
-
-    glTranslatef(e->x, e->y - (ENTITY_SIZE/2),0); // coord = au milieu en bas de l'entité
+  glTranslatef(e->x, e->y - (ENTITY_SIZE/2),0); // coord = au milieu en bas de l'entité
 
 
-#if 0
 
-    //original
-    
-    if (e-> state > ITEMIZED){                    // animation de la mort du dragon : tourne sur lui-même
-      if (e->state > REPLACED){     // jusqu'à quand on arrive à NEW_LIFE_DELAY et qu'il est remis en place 
-	glRotatef((e->state) *20, 0, 0, 1);
-      }
+  if (e-> state > ALIVE){                    // animation de la mort du dragon : tourne sur lui-même
+    if (e->state > REPLACED){                // jusqu à NEW_LIFE_DELAY où il est remis en place 
+      glRotatef((e->state) *20, 0, 0, 1);
       (e-> state)-= 1;
     }
     
-    if (e-> state == ITEMIZED){ // SI PAS DRAGON, DEAD_STAGE reste à 2
-      if (e-> drag)
-	(e->state) = ALIVE;
+    
+    
+      
+    else if (e-> state == REPLACED){  // REPLACED a deux utilisations differentes selon le type d'entite : dragon ou ennemi
+      if (e-> drag){                  // on remet le dragon en place avant sa "nouvelle vie", permet d'éviter qu'il ne meure si un ennemi était à sa place de naissance.
+	place_dragon();
+	e-> state --;                 // Le dragon ne reste pas toujours en etat REPLACED, il ne fait qu'y passer, contrairement a l'ennemi mort 
+      }
+      else  e-> texture_id = tex_bad_dead;  // Pour les ennemis, cela correspond au moment où il est transformé en ITEM bonus.
+                                            // Pas de décrément puisqu'il reste dans cet etat tant qu'il n'a pas été "mangé".
     }
-      
-      if (e-> state == REPLACED){  // on remet le dragon en place avant sa "nouvelle vie", permet d'éviter qu'il ne meure si un ennemi était à sa place de naissance.
-	if (e-> drag)
-	  place_dragon();
-	else  e-> texture_id = tex_bad_dead;
-      }
 
-
-#else
-if (e-> state > ALIVE){                    // animation de la mort du dragon : tourne sur lui-même
-      if (e->state > REPLACED){     // jusqu'à quand on arrive à NEW_LIFE_DELAY et qu'il est remis en place 
-	glRotatef((e->state) *20, 0, 0, 1);
-	(e-> state)-= 1;
-      }
-    
-    
-    
-//   if (e-> state == ITEMIZED){ // SI PAS DRAGON, DEAD_STAGE reste à 2
-  //    if (e-> drag)
-//	(e->state) = ALIVE;
-//  }
-      
-      else if (e-> state == REPLACED){  // on remet le dragon en place avant sa "nouvelle vie", permet d'éviter qu'il ne meure si un ennemi était à sa place de naissance.
-	if (e-> drag){
-	  place_dragon();
-	  e-> state --;
-	}
-	else  e-> texture_id = tex_bad_dead;
-      }
-
-      else e-> state --;
- }
-
-#endif
-
+    else e-> state --;
+  }
 
 
     glColor3f(1.0F, 1.0F,1.0F); 
-
     
     glEnable(GL_TEXTURE_2D);
     
     glBindTexture (GL_TEXTURE_2D, e->texture_id);
     
     glBegin(GL_QUADS);
-
   
     glTexCoord2f(invert_texture, 1);
     glVertex2f(-ENTITY_SIZE/2,ENTITY_SIZE/2) ;
@@ -495,21 +449,20 @@ if (e-> state > ALIVE){                    // animation de la mort du dragon : t
     glTexCoord2f(invert_texture, 0);
     glVertex2f(-ENTITY_SIZE/2,-ENTITY_SIZE/2) ;
  
-
-  
-   glEnd() ;
+    glEnd() ;
+    
     glPopMatrix();
-        glDisable(GL_TEXTURE_2D);
 
-
-	
-
-
-
+    glDisable(GL_TEXTURE_2D);
 	
 }
+
+
  
 void jump_drag(){
+  /* Fonction d'interface qui fait sauter le dragon 
+     destinée à être liée à la touche clavier ad hoc.
+   */ 
 if (entities -> jump_stage == 0 && entities -> state == ALIVE)
   jump_entity(entities);
 }
@@ -517,19 +470,22 @@ if (entities -> jump_stage == 0 && entities -> state == ALIVE)
 
 
 void jump_entity(Entity *e){
-  if (isOnSolidGround(e)){
-  //  if ((isWall(e->x, e->y) && isWall(e->x, e->y+CELL_SIZE-1))/* || (e->bubbledTo != NULL)*/){ // Jumps only if on solid ground. It avoids to let the dragon "fly" by jumping continually.
-    //    e->bubbledTo = NULL;
+  /*  Initialise le saut d'une entité
+   */
+  if (isOnSolidGround(e)){ // Jumps only if on solid ground. It avoids to let the dragon "fly" by jumping continually.
     e -> jump_stage = JUMP;
   } 
 }
       
     
-/* void move_drag(){ */
-/*   move_entity(entities); */
-/* } */
+
+
+
 
 bool touch_entity(Entity *e, Entity *e2){
+  /* Determine si deux entites se heurtent
+   */
+  
   return (((e2->x + ENTITY_SIZE/2 > e -> x) &&  (e2->x - ENTITY_SIZE/2 < e -> x))
 	   
 	  && ((e2->y + ENTITY_SIZE/2 >  e -> y) && (e2->y  < e -> y + ENTITY_SIZE/2)));
@@ -541,22 +497,29 @@ bool touch_entity(Entity *e, Entity *e2){
 
 
 bool touch_bubble(Entity *e, Bubble *b){
-
-
-  
-
+  /* Determine si les coordonnees d'une entite correspondent a celles d'une bulle
+   */
   return ((b->x + ENTITY_SIZE/2 > e -> x) &&  (b->x - ENTITY_SIZE/2 < e -> x))
 	   
-    && ((b->y + ENTITY_SIZE >=  e -> y) && (b->y   <= e -> y)); // ici e->y et pas b->y
+    && ((b->y + ENTITY_SIZE >=  e -> y) && (b->y   <= e -> y));
 
 }
 
 Bubble* touched_by_bubble(Entity *e){
+  /* Cette fonction appelée a chaque tour de boucle principale du jeu
+     verifie si une entité est touchée par une bulle et dans les conditions pour
+     "rentrer" dedans, auquel cas elle renvoie un pointeur vers cette bulle, qui 
+     sera assigné à l'entité
+     
+   */
   Bubble* bubble_chaser = entities->bubbles;
-  while (bubble_chaser != NULL && (!touch_bubble(e, bubble_chaser) || bubble_chaser->lifespan == 0 || e->state != ALIVE || (!bubble_chaser->empty && e->bubbledTo != bubble_chaser)))
+  while (bubble_chaser != NULL && (!touch_bubble(e, bubble_chaser)   // on continue si la bulle ne touche pas l'entite
+				   || bubble_chaser->lifespan == 0   // ou si la bulle est "morte" (invisible)
+				   || e->state != ALIVE              // ou si l'entité est morte ou en train de mourir
+				   || (!bubble_chaser->empty && e->bubbledTo != bubble_chaser))) // ou si la bulle a deja un "passager" qui n'est pas l'entité courante
     bubble_chaser = bubble_chaser -> next;
 
-  if (bubble_chaser != NULL)
+  if (bubble_chaser != NULL)  // si on assigne la bulle a cette entite, elle n'est plus vide
     bubble_chaser -> empty = false;
   return bubble_chaser;
     
@@ -592,7 +555,7 @@ void kill_dragon(void){
   
   //  entities -> dead = true;
     //faire tourner dragon
-  entities-> state = AGONY;
+  entities -> state = AGONY;
   (entities -> lives)--;
   if ((entities -> lives) == 0){
     
@@ -602,7 +565,7 @@ void kill_dragon(void){
     //    enemies_alive = 0;
 
     init_entities();
-    clean_bubbles(entities);
+
     entities -> lives = NUMBER_LIVES;
     
   }
@@ -618,21 +581,15 @@ void kill_enemy(Entity* e){
 			
 
 
-
-
-
-
-
-
-
 void move_entity(Entity *e){
   //  if (!(e->drag) && e->state == ALIVE)
       if ( e->state == ALIVE)
 	e->bubbledTo = touched_by_bubble(e);
   
-      if (e->bubbledTo == NULL) {
-	if (e->state == ALIVE ) { // Ne déplace pas l'entité si elle est dans une bulle : c'est la bulle qui se déplace et l'entité prend ses coordonnées.
-	  if (e->moving && e-> state < NEW_LIFE_DELAY){ // empeche de pouvoir deplacer le perso pendant qu'il meurt .. 10 est le délai une fois qu'on la replacé avant qu'il puisse de nouveau être atteint.
+      if (e->bubbledTo == NULL) {// Ne déplace pas l'entité si elle est dans une bulle : c'est la bulle qui se déplace et l'entité prend ses coordonnées.
+	if (e->state == ALIVE ) { 
+	  if (e->moving && e-> state < NEW_LIFE_DELAY){ // empeche de pouvoir deplacer le perso pendant qu'il meurt ..
+	                                                //NEW_LIFE_DELAY est le délai une fois qu'on la replacé avant qu'il puisse de nouveau être atteint.
 	    if (e->direction == 'R'){
 	      //	  if ((isWall(e-> x + ENTITY_SIZE/2, e->y -1) || touch_any_entity(e, entities)) && !(e->drag)){
 	      if (isWall((e-> x + ENTITY_SIZE/2) +2, e->y -1)){
@@ -660,23 +617,6 @@ void move_entity(Entity *e){
   }
 
 	  
-/* #if 0 */
-/* 	  //	  	  if (!isWall(e-> x - ENTITY_SIZE/2, e-> y -1)){ */
-/* 	  if (!isWall(e-> x - ENTITY_SIZE/2, e-> y -1)){ */
-/* 	    //	    if (!touch_any_entity(e, entities) || e->drag) */
-/* 	      	e->x -=2; */
-/* 	  } */
-/* 	  else if (!(e-> drag)){ */
-/* 	    e-> x += 10; */
-/* 	    e->direction ='R'; */
-/* 	  } */
-/* 	} */
-
-
-/*       } */
-/*     } */
-/*   } */
-/* #endif   */
   else { 
  
     e-> x = e-> bubbledTo -> x;
@@ -690,13 +630,17 @@ void move_entity(Entity *e){
 
 
 void test_collisions(Entity* e){
+
+  /* Teste et traite les différentes collisions possibles entre entre dragon et ennemis
+     
+   */
                            
   if (touch_entity(e, entities)){ // si enemi touche dragon 
     if (e->bubbledTo == NULL){  // si ennemi pas dans bulle
       if( entities->state == ALIVE){ // si ennemi pas dans bulle touche le dragon
 	if (e->state == ALIVE)       // si ennemi en vie ==> dragon meurt
 	  kill_dragon();
-	else if (e->state == REPLACED){ // si ennemi est transforme en ITEM bonus ==> dragon chope les points. //original ITEMIZED
+	else if (e->state == REPLACED){ // si ennemi est transforme en ITEM bonus ==> dragon chope les points.
 	  get_bonus(e);
 	  e->state = DEAD;
 	  enemies_alive -= 1;
@@ -704,7 +648,7 @@ void test_collisions(Entity* e){
       }
 	      
 	      
-    } else /* if (e->state == ALIVE)*/{   // si dans bulle, c'est lui qui meurt!
+    } else {   // si ennemi dans bulle, c'est lui qui meurt!
       kill_enemy(e);
 		 
     }
@@ -716,24 +660,27 @@ void test_collisions(Entity* e){
     
     
 
-/* void gravity_drag(){ */
-/*   gravity(dragptr); */
 
-/* } */
+
+
 
 bool isOnSolidGround(Entity* e){
-  bool wall_under_right, wall_under_left, on_top_wall_left, on_top_wall_right; // those booleans to check if we are "in the air" or "on the ground"
+  /* This function checks if we are "in the air" or "on the ground"
+   */
 
   int x_corner_bottom_left = e->x - ENTITY_SIZE/2;
   int x_corner_bottom_right = e->x + ENTITY_SIZE/2;
-  wall_under_right = isSolid(x_corner_bottom_left, e->y);                // check if the left side of the entity is on solid surface
-  on_top_wall_right = isSolid(x_corner_bottom_left, e->y + CELL_SIZE - 1); // check that we are not "inside" the wall but on top of it. Avoids to get stuck in the wall
-  wall_under_left = isSolid(x_corner_bottom_right, e->y);               // same for the right side
-  on_top_wall_left = isSolid(x_corner_bottom_right, e->y + CELL_SIZE - 1);  //
 
   
+  bool wall_under_right = isSolid(x_corner_bottom_left, e->y);                // check if the left side of the entity is on solid surface
+  bool on_top_wall_right = isSolid(x_corner_bottom_left, e->y + CELL_SIZE - 5); // check that we are not "inside" the wall but on top of it. Avoids to get stuck in the wall
+  bool wall_under_left = isSolid(x_corner_bottom_right, e->y);               // same for the right side
+  bool on_top_wall_left = isSolid(x_corner_bottom_right, e->y + CELL_SIZE - 5);  //
+
+  bool on_top_center = isSolid(e-> x, e->y + CELL_SIZE-5);
+  bool wall_under_center = isSolid(e->x, e->y);
   
-  return  (wall_under_right && on_top_wall_right) || (wall_under_left && on_top_wall_left);
+  return  (wall_under_right && on_top_wall_right) || (wall_under_left && on_top_wall_left) || (on_top_center && wall_under_center);
 }
     
 void gravity(Entity *e){
@@ -742,12 +689,14 @@ void gravity(Entity *e){
     If not, it checks if entity is on a solid ground. Entity falls otherwise.
   */
 
-  
+  if (e-> bubbledTo == NULL){ // No gravity if in a bubble
+
+    
   // To pass through the "holes" in border walls
   if (e-> y < CELL_SIZE)
     e-> y = WINDOW_HEIGHT ;//-CELL_SIZE;
   else if (e-> y > WINDOW_HEIGHT){
-    e->y = CELL_SIZE+ MOVE_V;
+    e->y = CELL_SIZE+ BUBBLE_V;
   }
 
 
@@ -756,14 +705,16 @@ void gravity(Entity *e){
     if (!isWall(e->x, e->y - ENTITY_SIZE) 
 	&& !isWall(e->x - ENTITY_SIZE/2, e->y - ENTITY_SIZE)
 	&& !isWall(e->x + ENTITY_SIZE/2, e->y-ENTITY_SIZE)){
-    e->y -= MOVE_V;
-    e->jump_stage--;
+      e->y -= MOVE_V;
+      e->jump_stage--;
     } else e-> jump_stage = 0;
   }
   // Gravity doesn't apply during the jump, avoids to substract and add the same thing
 		       
   else if (!isOnSolidGround(e))
-     e->y += MOVE_V;
+    e->y += MOVE_V;
+
+  }else (e-> y = e -> bubbledTo-> y + ENTITY_SIZE/2);
 
 
 }
@@ -843,10 +794,10 @@ void add_bubble(Entity *e){
  
  
 void move_bubble(Bubble *b){
-   if (b -> lifespan > BUBBLE_LIFESPAN / 2){
+  if (b -> lifespan > BUBBLE_LIFESPAN / 2){ // MOUVEMENT HORIZONTAL
      if (b-> direction == 'L'){
        if (!isWall (b->x-ENTITY_SIZE/2 - 5, b->y)){
-	   b->x -= 1 ;
+	   b->x -= BUBBLE_H ;
 	 }
      }
      else if (!isWall (b->x+ENTITY_SIZE/2 + 5, b->y)){
@@ -855,26 +806,37 @@ void move_bubble(Bubble *b){
      
      b->lifespan --;
    }
-   else if (b-> lifespan > 0){
-     //     b-> y -= 5;
+   else if (b-> lifespan > 0){ // MONTEE DE LA BULLE
+
+     
      if (!isWall(b->x, b->y - ENTITY_SIZE/2))
        b -> y -= BUBBLE_V;
+
+     
+     // Pour traverser les "trous" dans les murs exterieurs
+     if (b-> y < CELL_SIZE)
+       b-> y = WINDOW_HEIGHT ;//-CELL_SIZE;
+     else if (b-> y > WINDOW_HEIGHT){
+       b->y = CELL_SIZE;
+     }
+
      b->lifespan --;
        }
-
-     // To pass through the "holes" in border walls
-  if (b-> y < CELL_SIZE)
-    b-> y = WINDOW_HEIGHT ;//-CELL_SIZE;
-  else if (b-> y > WINDOW_HEIGHT){
-    b->y = CELL_SIZE+ BUBBLE_V;
-  }
-
 }
 
 
- void delete_bubble(){
-   
- }
+void clean_bubbles(Entity *e){
+  Bubble *l = e -> bubbles;
+  
+  while (l != NULL){
+    fprintf(stderr, "Cleaning bubble : %p", l);
+    Bubble *t = l->next;
+    l = l-> next;
+    free(t);
+  }
+}
+
+
 
  
 void display_bubble(Bubble *b){

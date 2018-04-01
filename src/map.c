@@ -7,7 +7,7 @@
 
 #include "map.h"
 #include "tga_small.h"
-#define NUMBER_LEVELS 5
+#define NUMBER_LEVELS 9
 
 
 
@@ -26,7 +26,12 @@ char* levels_tab[] = {"levels/map.txt",
 		      "levels/map2.txt",
 		      "levels/map3.txt",
                       "levels/map4.txt",
-                      "levels/map5.txt"};
+                      "levels/map5.txt",
+                      "levels/map6.txt",
+                      "levels/map7.txt",
+                      "levels/map8.txt",
+                      "levels/map9.txt",
+};
 char* textures_tab[] = {"images/level1.tga",
 			"images/level2.tga",
 			"images/level3.tga",
@@ -56,22 +61,22 @@ char current_map[MAP_HEIGHT][MAP_WIDTH] = {0};
 
 int next_level(){
   /* Passe au niveau suivant  */
-  if (level < NUMBER_LEVELS -1)
+  if (level < NUMBER_LEVELS -1){
     level++;
-  init_level(level);
+    init_level(level);
+  } else level = -2;
   return level;
 }
 
 int get_level(){
   /* Renvoie le numero du niveau courant */
-
   return level+1;
 }
 
 
   
 void reset_level(){
-  level = 0;
+  level = 4;
   init_level(level);
 }
 
