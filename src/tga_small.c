@@ -2,7 +2,15 @@
 
 /*
 
-Voici le fichier d'origine que j'ai modifié afin de ne l'utiliser qu'avec du 8bits sans compression
+Ce module est très largement inspiré d'un fichier et d'une page web de David HENRY.
+Au depart, le fichier d'origine etait un chargeur de texture à partir de tout type
+de fichier tga. 
+Il a été grandement réduit afin de ne l'utiliser qu'avec du 8bits sans compression.
+Le canal alpha, inexistant dans les images d'origines, est créé "artificiellement" à partir d'une 
+couleur définie dans ALPHA_R, ALPHA_G, ALPHA_B.
+
+Le fichier d'origine et les explications sont disponibles à cette adresse : 
+http://tfc.duke.free.fr/coding/tga.html
 
  * tga.c -- tga texture loader
  * last modification: aug. 14, 2007
@@ -54,11 +62,12 @@ struct gl_texture_t
   GLubyte *texels;
 };
 
-/* static GLuint texId = 0; */
+
 
 
 
 #pragma pack(push, 1)
+
 /* TGA header */
 struct tga_header_t
 {
@@ -81,10 +90,6 @@ struct tga_header_t
 };
 #pragma pack(pop)
 
-/* OpenGL texture info */
-
-/* /\* Texture id for the demo *\/ */
-/* GLuint texId = 0; */
 
 
 
@@ -113,8 +118,6 @@ GetTextureInfo (const struct tga_header_t *header,
 
 
 
-
-
 static void ReadTGA8bits_add_alpha (FILE *fp, const GLubyte *colormap,
 	      struct gl_texture_t *texinfo)
 {
@@ -135,7 +138,9 @@ static void ReadTGA8bits_add_alpha (FILE *fp, const GLubyte *colormap,
       /* transparency byte */
       /* je crée une texture 32 bits à partir des 8 bits d'origine 
 	 le dernier octet sert à coder la transparence, je le mets à 
-	 0 (= transparent ) si le pixel est noir (0, 0, 0) ou presque. */
+	 0 (= transparent ) si le pixel est noir (0, 0, 0) ou presque. 
+	source : https://stackoverflow.com/questions/3392393/opengl-set-transparent-color-for-textures
+*/
 
       if (texinfo->texels[(i*4)+2] <= ALPHA_R && texinfo->texels[(i*4)+1] <= ALPHA_G
 	  && texinfo->texels[(i*4)+0] <= ALPHA_B)
@@ -148,8 +153,13 @@ static void ReadTGA8bits_add_alpha (FILE *fp, const GLubyte *colormap,
 }
 
 
-static struct gl_texture_t *ReadTGAFile (const char *filename)
-{
+static struct gl_texture_t *ReadTGAFile (const char *filename){
+  
+/* Genere une structure gl_texture_t (contenu necessaire a la creation d'une texture glut) 
+   à partir d'une image au format tga.
+ */
+  
+
   FILE *fp;
   struct gl_texture_t *texinfo;
   struct tga_header_t header;
@@ -199,9 +209,10 @@ static struct gl_texture_t *ReadTGAFile (const char *filename)
   return texinfo;
 }
 
-GLuint
-loadTGATexture (const char *filename)
-{
+GLuint loadTGATexture (const char *filename){
+  /* Genère une texture gl à partir d'un fichier tga
+     et renvoie l'id de la texture.
+   */
   struct gl_texture_t *tga_tex = NULL;
   GLuint tex_id = 0;
   GLint alignment;
@@ -230,30 +241,21 @@ loadTGATexture (const char *filename)
       glGetIntegerv (GL_UNPACK_ALIGNMENT, &alignment);
       //      glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
-#if 1
+
 
       /* GL_NEAREST donne un effet plus "old_school" */
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       
 
- /* gluBuild2DMipmaps (GL_TEXTURE_2D, tga_tex->internalFormat, */
- /* 			 tga_tex->width, tga_tex->height, */
- /* 			 tga_tex->format, GL_UNSIGNED_BYTE, tga_tex->texels); */
+
+
+
 
       
       glTexImage2D (GL_TEXTURE_2D, 0, tga_tex->internalFormat,
 		    tga_tex->width, tga_tex->height, 0, tga_tex->format,
 		    GL_UNSIGNED_BYTE, tga_tex->texels);
-#else
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-
-      gluBuild2DMipmaps (GL_TEXTURE_2D, tga_tex->internalFormat,
-			 tga_tex->width, tga_tex->height,
-			 tga_tex->format, GL_UNSIGNED_BYTE, tga_tex->texels);
-#endif
 
       glPixelStorei (GL_UNPACK_ALIGNMENT, alignment);
 

@@ -12,16 +12,16 @@
 #define DRAGON_START_Y (MAP_HEIGHT-1)*CELL_SIZE
 #define ENEMY_START_X WINDOW_WIDTH / 2
 #define ENEMY_START_Y 4*CELL_SIZE
-#define NUMBER_ENEMIES 1
+#define NUMBER_ENEMIES 4
 
 
 #define BUBBLE_LIFESPAN 100
 #define NUMBER_LIVES 3
-#define NEW_LIFE_DELAY 30  // le nombre de tours entre le moment où le joueur est replacé après la "mort" et avant qu'il puisse être atteint par les ennemis
 
+#define NEW_LIFE_DELAY 30  // le nombre de tours entre le moment où le joueur est replacé après la "mort" et avant qu'il puisse être atteint par les ennemis
 #define DEATH_STAGES 100 // length of the agony of the entity.
 
-#define AGONY DEATH_STAGES
+#define AGONY DEATH_STAGES       
 #define REPLACED NEW_LIFE_DELAY
 #define ITEMIZED 2
 #define DEAD -1
@@ -59,7 +59,7 @@ typedef struct Entity{
   int x;
   int y;
   char direction;
-  bool moving;
+  bool moving;  
   int jump_stage;// permet de savoir si le personnage est en train de sauter, et si ouidrag, ou il en est dans le saut
   bool drag;
   int state; // si il meurt : devient plus grand que 0 (permet de gerer l'animation de la mort du personnage
@@ -80,8 +80,8 @@ static EntityList list_first = NULL;
 static EntityList list_last = NULL;
 
 
-GLuint tex_bad_dead;
-GLuint tex_bad;
+static GLuint tex_bad_dead;
+static GLuint tex_bad;
 
 
 static int enemies_alive = 0;
@@ -98,92 +98,100 @@ static EntityList entities;
 
 EntityList new_list(void);
 bool is_empty_list(void);
-
 EntityList add_end_list(int x, int y, EntityList l);
-EntityList add_front_list(EntityList l, bool isDragon, GLuint texture_id);
+EntityList add_entity(EntityList l, bool isDragon, GLuint texture_id);
 EntityList remove_front_list(EntityList l);
 
 void randomize_entity(Entity *e);
-
-
-
 void gravity(Entity *e);
-
-
-
 bool isOnSolidGround(Entity* e);
 
-
-void display_bubble(Bubble *b);
-
-
+void init_entity(Entity* e);
 bool touch_entity(Entity *e, Entity *e2);
-
 void kill_dragon(void);
-  
 
 bool touch_any_entity(Entity *e, EntityList l);
 void display_entity(Entity *e);
-
-
 void move_entity(Entity *e);
-
-
 void jump_entity(Entity *e);
-
-
-
 
 void place_dragon(void);
 void add_bubble(Entity *e);
 void display_move_bubbles(Bubble *b);
 void move_bubble(Bubble *b);
+void display_bubble(Bubble *b);
+void clean_bubbles(Entity *e);
+
 
 void test_collisions(Entity* e);
 
 
-void init_entity(Entity* e);
 
 
-void clean_bubbles(Entity *e);
+
+
 
 int getEnemiesAlive(void){
+  /* Fonction d'interface qui renvoit le nombre d'ennemis encore en vie
+   */
   return enemies_alive;
 }
   
-EntityList new_list(void){
-  return NULL;
-    }
 
 
 void create_entities(){
   /* Cree la liste chainee contenant le dragon et les ennemis
    */
-  
-  srand(time(NULL));
-  entities = new_list();
 
-  
 
- tex_bad = loadTGATexture("images/enemy.tga");
+  entities = NULL;
+
+  tex_bad = loadTGATexture("images/enemy.tga");
   GLuint tex_drag = loadTGATexture("images/drag.tga");
   tex_bad_dead = loadTGATexture("images/banana.tga");
 
 
- for (int i = NUMBER_ENEMIES; i > 0; i--){
+  for (int i = NUMBER_ENEMIES; i > 0; i--){
    
-   entities = add_front_list(entities, false, tex_bad);
+    entities = add_entity(entities, false, tex_bad);
  
- } entities = add_front_list(entities, true, tex_drag);
- init_entities();
-
-
+  }
+  entities = add_entity(entities, true, tex_drag);
+  init_entities();
 
 }
 
 
 
 #if 0
+
+
+EntityList remove_front_list(EntityList l){
+  /* Retire un élément de la liste d'entites
+   */
+  Entity *temp = NULL;
+  if (is_empty_list)
+    return NULL;
+  if (list_last == list_first){ // only one element in list
+    free(list_first);
+    list_last = NULL;
+    list_first = NULL;
+    //nb_entity = 0;
+  }
+  else {
+    temp = list_first;
+    list_first = list_first -> next;
+    free(temp);
+    //    nb_entity--;
+  }
+     
+    return list_first;
+  
+}
+
+
+
+
 EntityList add_end_list(int x, int y, EntityList l){
   Entity *new_entity;
   new_entity = malloc(sizeof(*new_entity));
@@ -203,24 +211,31 @@ EntityList add_end_list(int x, int y, EntityList l){
  
 }
 
+EntityList new_list(void){
+  return NULL;
+}
+
+
 #endif
 
 
 
 char get_random_direction(void){
-   srand(time(NULL));
+  /* Renvoie une direction aléatoire.
+   */
 
   char direction;
-  int prob = rand()%100;
-  if (prob < 50){
+  if (enemies_alive % 2 == 0){
     direction = 'R';
-  } else direction = 'L';
-
-  
+      } else direction = 'L';
+ 
   return direction;
 }
 
-EntityList add_front_list(EntityList l, bool isDragon, GLuint texture_id){
+
+EntityList add_entity(EntityList l, bool isDragon, GLuint texture_id){
+  /* Ajoute une entité (dragon ou ennemi) à la liste 
+   */
   Entity *new_entity;
   new_entity = malloc(sizeof(*new_entity));
   if (new_entity == NULL){
@@ -228,12 +243,12 @@ EntityList add_front_list(EntityList l, bool isDragon, GLuint texture_id){
     exit(EXIT_FAILURE);
   }
 
- new_entity -> state = DEAD;
- new_entity -> drag = isDragon;
- new_entity -> bubbles = NULL;
- new_entity -> bubbledTo = NULL;
- new_entity -> texture_id = texture_id; 
- new_entity -> next = l; 
+  new_entity -> state = DEAD;
+  new_entity -> drag = isDragon;
+  new_entity -> bubbles = NULL;
+  new_entity -> bubbledTo = NULL;
+  new_entity -> texture_id = texture_id; 
+  new_entity -> next = l; 
 
   return new_entity;
 }
@@ -255,8 +270,8 @@ void init_entities(){
 void init_entity(Entity* e){
   /* Remet l'entite dans son etat initial entre les niveaux ou parties
    */
-
-  e -> direction = 'R';
+  
+  e -> direction = get_random_direction();
   e -> jump_stage = 0;
   e -> moving = true;
   //e -> drag = isDragon;
@@ -267,6 +282,7 @@ void init_entity(Entity* e){
   e -> bubbledTo = NULL;
 
   if (e->drag){
+      e -> direction = 'R';
     if (e -> bubbles != NULL){
       clean_bubbles(e);
       e -> bubbles = NULL;
@@ -296,28 +312,6 @@ void init_entity(Entity* e){
   }
 }
 
-EntityList remove_front_list(EntityList l){
-  /* Retire un élément de la liste d'entites
-   */
-  Entity *temp = NULL;
-  if (is_empty_list)
-    return NULL;
-  if (list_last == list_first){ // only one element in list
-    free(list_first);
-    list_last = NULL;
-    list_first = NULL;
-    //nb_entity = 0;
-  }
-  else {
-    temp = list_first;
-    list_first = list_first -> next;
-    free(temp);
-    //    nb_entity--;
-  }
-     
-    return list_first;
-  
-}
 
 
 
@@ -335,6 +329,8 @@ void randomize_entity(Entity *e){
 
 
 void set_direction_drag(char direction){
+  /* Fonction d'interface qui assigne la direction du dragon
+   */
   entities->direction = direction;
 
     }
@@ -342,6 +338,8 @@ void set_direction_drag(char direction){
 
 
 void set_moving_drag(bool moving){
+  /* Fonction d'interface qui met le dragon en mouvement
+   */
   entities->moving = moving;
 }
 /* ---------------------- */
@@ -528,13 +526,13 @@ Bubble* touched_by_bubble(Entity *e){
 
 
 bool touch_any_entity(Entity *e, EntityList l){
+  /* Détermine si une entité touche une autre entité dans une liste
+   */
   bool touch = false;
   while(l != NULL){
     if (e != l && l->state != DEAD){
       if (touch_entity(e, l))
 	touch = true;
-
-
 
     }
     
@@ -543,14 +541,19 @@ bool touch_any_entity(Entity *e, EntityList l){
    return touch;
 }
 
-void get_bonus(Entity* e){
-  e->state == DEAD; // ennemi disparait completement
+void eat_enemy(Entity* e){
+  /* Action lorsque le dragon attrape un ennemi transformé en ITEM bonus : 
+     l'ennemi disparaît, et le dragon attrape les points.
+   */
+  e->state = DEAD; // ennemi disparait completement
   entities -> score += e->score;
+  enemies_alive -= 1;
 }
 
 
 void kill_dragon(void){
-  
+  /* Dragon perd une vie
+   */
 
   
   //  entities -> dead = true;
@@ -564,7 +567,7 @@ void kill_dragon(void){
     //    entities -> score = 0;
     //    enemies_alive = 0;
 
-    init_entities();
+        init_entities();
 
     entities -> lives = NUMBER_LIVES;
     
@@ -572,6 +575,8 @@ void kill_dragon(void){
 }
 
 void kill_enemy(Entity* e){
+  /* Lance l'agonie d'un ennemi
+   */
   e->bubbledTo->lifespan = 0;
   e->bubbledTo = NULL;
   e->jump_stage = JUMP;
@@ -582,6 +587,9 @@ void kill_enemy(Entity* e){
 
 
 void move_entity(Entity *e){
+  /* Gère le déplacement d'une entité à chaque tour de boucle du jeu
+   */
+  
   //  if (!(e->drag) && e->state == ALIVE)
       if ( e->state == ALIVE)
 	e->bubbledTo = touched_by_bubble(e);
@@ -641,9 +649,9 @@ void test_collisions(Entity* e){
 	if (e->state == ALIVE)       // si ennemi en vie ==> dragon meurt
 	  kill_dragon();
 	else if (e->state == REPLACED){ // si ennemi est transforme en ITEM bonus ==> dragon chope les points.
-	  get_bonus(e);
-	  e->state = DEAD;
-	  enemies_alive -= 1;
+	  eat_enemy(e);
+
+
 	}
       }
 	      
@@ -722,18 +730,24 @@ void gravity(Entity *e){
     
 
 char get_lives(){
+  /* Fonction d'interface qui retourne le nombre de vies restantes du dragon
+   */
   
   return ('0' + entities->lives);
  }
 
 
 int get_score(){
+  /* Fonction d'interface qui retourne le score du dragon
+   */
+  
 
    return entities-> score;
 }
 
 void launch_bubble(){
-
+  /* Lance une bulle
+   */
    if (entities->direction == 'R'){   
      if (!isWall(entities->x + ENTITY_SIZE, entities->y -1) && !isWall(entities->x +ENTITY_SIZE*1.5, entities->y -1)) // Evite de lancer une bulle quand trop pres du mur
 	 add_bubble(entities);
@@ -746,6 +760,8 @@ void launch_bubble(){
 
 
 void add_bubble(Entity *e){
+  /* Ajoute une bulle à la liste de bulles d'une entite
+   */
 
   Bubble *new_bubble;
   new_bubble = malloc(sizeof(*new_bubble));
@@ -778,7 +794,8 @@ void add_bubble(Entity *e){
 
 
  void display_move_bubbles(Bubble *b){
- 
+   /* Appelle l'affichage et le déplacement de toutes les bulles d'une liste de bulles
+    */
  
    while (b != NULL){
      if (b->lifespan > 0){
@@ -794,6 +811,9 @@ void add_bubble(Entity *e){
  
  
 void move_bubble(Bubble *b){
+  /* Gère le déplacement d'une bulle. Durée déterminée par BUBBLE_LIFESPAN 
+     Première moitié du déplacement horizontal puis vertical.
+   */
   if (b -> lifespan > BUBBLE_LIFESPAN / 2){ // MOUVEMENT HORIZONTAL
      if (b-> direction == 'L'){
        if (!isWall (b->x-ENTITY_SIZE/2 - 5, b->y)){
@@ -826,6 +846,8 @@ void move_bubble(Bubble *b){
 
 
 void clean_bubbles(Entity *e){
+  /* Supprime toutes les bulles attachées à une entité
+   */
   Bubble *l = e -> bubbles;
   
   while (l != NULL){

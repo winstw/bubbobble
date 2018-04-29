@@ -30,9 +30,8 @@ typedef enum{
 
 
 static State game_state = MENU;                      
-static int game_slide = WINDOW_HEIGHT;// MAP_HEIGHT*CELL_SIZE;
- static int level_delay = NEW_LEVEL_DELAY;
-//static int game_over_delay = GAME_OVER_DELAY;
+static int game_slide = WINDOW_HEIGHT;
+static int level_delay = NEW_LEVEL_DELAY;
 static int screen_delay = TIMER_SCREEN_DELAY;
 
 
@@ -53,9 +52,6 @@ void shortcuts_screen(void);
 
 
 int display_centered_string(char *string, int pos_y){
-
-  
-  
   /* Affiche un texte centré horizontalement à l'écran 
      dans la police par défaut DEFAULT_FONT
   */
@@ -65,11 +61,9 @@ int display_centered_string(char *string, int pos_y){
 
 
 int length_string(char *string){
-  
   /* Retourne la longueur d'un chaine dans la police par default DEFAULT_FONT
    */
 
-  
   int longueur = 0;
   for (int i= 0; string[i] != 0; i++){
     longueur += glutBitmapWidth(DEFAULT_FONT, string[i]);
@@ -79,7 +73,7 @@ int length_string(char *string){
 }
 
 int display_string(void *font, char *string, int pos_x, int pos_y){
-
+  
   /* Affiche un texte a l'ecran 
    */
   
@@ -119,6 +113,7 @@ void init(){
 }
 
 void display(void){
+  
   /* Cette fonction est la boucle principale du programme, relancée en
      permanence par render_game(). En fonction de la variable
      game_state, elle donne le contrôle à une partie du programme ou
@@ -164,6 +159,7 @@ void display(void){
 
 
 void display_level(void){
+  
   /* Affiche à l'écran le niveau à chaque passage vers un supérieur
    */
 
@@ -201,9 +197,6 @@ void game(bool pause){
   }
 
 
-    
-
-
 
   
   if(game_slide > 0){ // Permet l'effet de glissement au début de la partie
@@ -221,7 +214,6 @@ void game(bool pause){
 
   glMatrixMode(GL_MODELVIEW); 
   glLoadIdentity();
-
 
   
   glTranslatef(0, game_slide, 0);
@@ -273,6 +265,9 @@ void display_status(void){
 
 
 void shortcuts_screen(){
+  /* Affiche l'écran des raccourcis clavier
+   */
+  
   glColor3f(0.0F, 0.0F,1.0F);
   int pos_y = WINDOW_HEIGHT/3;
   display_centered_string("TOUCHES CLAVIER", pos_y);
@@ -336,9 +331,9 @@ void menu_game(){
   pos_y = BUTTON_HEIGHT * 0.8;
 
   char *button_messages[6] = {"NOUVELLE PARTIE (P)",
-			      "SCORES",
+			      "SCORES (A FAIRE)",
 			"INSTRUCTIONS (I)",
-			"DIFFICULTE",
+			"DIFFICULTE (A FAIRE)",
 			"RACCOURCIS (R)",
 			"QUITTER (ESC)",
 			
@@ -357,7 +352,7 @@ void menu_game(){
 
 void handleResize(int w, int h) {
   /*
-    gère les coordonnées
+    Gère le rapport entre l'affichage et les coordonnées 
   */
   	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
@@ -409,7 +404,7 @@ doc : http://www.dei.isep.ipp.pt/~matos/cg/docs/manual/glutKeyboardUpFunc.3GLUT.
 
 
 void keyboard_down(unsigned char key, int x, int y){
-  /* Fonction propre à glut, qui enregistre les touches ASCII enfoncées.
+  /* Fonction  qui enregistre les touches ASCII enfoncées.
    */
   switch(key){
 
@@ -451,7 +446,7 @@ void keyboard_down(unsigned char key, int x, int y){
 }
 
 void keyboard_up(unsigned char key, int x, int y){
-  /* Fonction propre à glut, qui enregistre les touches ASCII relachées.
+  /* Fonction  qui enregistre les touches ASCII relachées.
 
 
   http://www.dei.isep.ipp.pt/~matos/cg/docs/manual/glutKeyboardUpFunc.3GLUT.html
@@ -466,7 +461,7 @@ void keyboard_up(unsigned char key, int x, int y){
 
 
 
-void timer_game(int time){/* opengldoc.pdf*/
+void timer_game(int time){  
   /* Cette fonction est celle qui gère le "timing" du programme, le
      délai entre chaque itération de display().
   */
@@ -479,6 +474,8 @@ void timer_game(int time){/* opengldoc.pdf*/
 
 
 void game_won(void){
+  /* Gère le cas où le joueur a terminé tous les niveaux du jeu
+   */
    game_state = GAME_WON;
    game_slide = WINDOW_HEIGHT;
    screen_delay = TIMER_SCREEN_DELAY;

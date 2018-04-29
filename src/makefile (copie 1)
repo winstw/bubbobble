@@ -1,11 +1,9 @@
 IDIR =../include
 CC=gcc
-CFLAGS=-I$(IDIR) -lglut -lGL -lGLU -lm
+CFLAGS=-I$(IDIR) -lglut -lGL -lGLU -lm 
 
 ODIR=obj
 LDIR =../lib
-
-
 
 _DEPS = entity.h graphics.h map.h tga_small.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

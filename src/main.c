@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <GL/glut.h>
-#include "keyboard.h"
+
 #include "entity.h"
 #include "graphics.h"
 #include "map.h"
