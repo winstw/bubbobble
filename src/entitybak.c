@@ -88,26 +88,24 @@ typedef struct Entity{
 
 /* ------------------------------- */
 
-//static EntityList list_first = NULL;
-//static EntityList list_last = NULL;
+static EntityList list_first = NULL;
+static EntityList list_last = NULL;
 
 typedef struct{
+
+
 }Store;
-
-/* -------------------------------- */
-
-
-
 static GLuint tex_bad_dead;
 static GLuint tex_bad;
-static EntityList entities;
+
 
 static int enemies_alive = 0;
 
 
+/* -------------------------------- */
 
 
-
+static EntityList entities;
 
 /*-----------------------------------*/
 
@@ -139,10 +137,10 @@ void display_move_bubbles(Bubble *b);
 void move_bubble(Bubble *b);
 void display_bubble(Bubble *b);
 void clean_bubbles(Entity *e);
-void clean_entities(EntityList l);
+
 
 void test_collisions(Entity* e);
-void entity_jump_ia(Entity *e);
+
 
 static int difficulty = 0;
 
@@ -212,7 +210,7 @@ EntityList remove_front_list(EntityList l){
 
 EntityList add_end_list(int x, int y, EntityList l){
   Entity *new_entity;
-  new_entity = (sizeof(*new_entity));
+  new_entity = malloc(sizeof(*new_entity));
   if (new_entity == NULL){
     printf("Memory allocation error");
     exit(EXIT_FAILURE);
@@ -289,7 +287,7 @@ void init_entities(){
 void init_entity(Entity* e){
   /* Remet l'entite dans son etat initial entre les niveaux ou parties
    */
-  static int enemy_number = 0;
+  static enemy_number = 0;
 
 
   e -> direction = get_random_direction(enemy_number);
@@ -933,7 +931,7 @@ void clean_bubbles(Entity *e){
   Bubble *l = e -> bubbles;
   
   while (l != NULL){
-    fprintf(stderr, "Cleaning bubble : %p\n", l);
+    fprintf(stderr, "Cleaning bubble : %p", l);
     Bubble *t = l->next;
     l = l-> next;
     free(t);
@@ -941,24 +939,6 @@ void clean_bubbles(Entity *e){
 }
 
 
-void clean_entities(EntityList l){
-  /* Supprime toutes les bulles attachées à une entité
-   */
-  Entity *e = l;
-  
-  while (l != NULL){
-    fprintf(stderr, "Cleaning entity : %p\n", l);
-    if (l->drag)
-      clean_bubbles(l);
-    Entity *t = l->next;
-    l = l-> next;
-    free(t);
-  }
-}
-
-void clean(){
-  clean_entities(entities);
-}
 
  
 void display_bubble(Bubble *b){

@@ -40,7 +40,12 @@ http://tfc.duke.free.fr/coding/tga.html
  * gcc -Wall -ansi -lGL -lGLU -lglut tga.c -o tga
  */
 
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "tga_small.h"
@@ -227,30 +232,16 @@ GLuint loadTGATexture (const char *filename){
     {
       /* Generate texture */
       glGenTextures (1, &tga_tex->id);
-      fprintf(stdout, "generation texture ok : %s", filename);
+      fprintf(stderr, "generation texture ok : %s\n", filename);
       glBindTexture (GL_TEXTURE_2D, tga_tex->id);
-      fprintf(stdout, "chargement texels ok : %s", filename);
+      fprintf(stderr, "chargement texels ok : %s\n", filename);
 
 
-
-      
-      /* Setup some parameters for texture filters and mipmapping */
-
-
-      
       glGetIntegerv (GL_UNPACK_ALIGNMENT, &alignment);
-      //      glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-
-
 
       /* GL_NEAREST donne un effet plus "old_school" */
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      
-
-
-
-
 
       
       glTexImage2D (GL_TEXTURE_2D, 0, tga_tex->internalFormat,
@@ -265,7 +256,7 @@ GLuint loadTGATexture (const char *filename){
       free (tga_tex->texels);
       free (tga_tex);
     }
-  fprintf(stdout, "%i", tex_id);
+  fprintf(stderr, "%i\n", tex_id);
   return tex_id;
 
 }

@@ -10,12 +10,13 @@
 
 
 
+
 char get_lives();
 int get_score();
+int reset_score();
 
 
-
-void display_entities();
+void manage_entities(); // anciennement display_entities
 void create_entities();
 
 
@@ -26,8 +27,11 @@ void launch_bubble();
 void set_direction_drag(char direction);
 void set_moving_drag(bool moving);
 
+void set_difficulty(int choice);
+
 void init_entities();
 
 
 int getEnemiesAlive();
+void clean(void);
 #endif
