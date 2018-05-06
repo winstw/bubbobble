@@ -51,7 +51,7 @@ static char current_map[MAP_HEIGHT][MAP_WIDTH] = {0}; // Recevra les données de
 
 
 
-
+void read_map();
 void draw_wall(int x, int y);       
 void init_level(int level);
 

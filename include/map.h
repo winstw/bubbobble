@@ -10,36 +10,22 @@
 #define WINDOW_HEIGHT MAP_HEIGHT*CELL_SIZE
 
 
-/* typedef struct{ */
-/*   int x; */
-/*   int y; */
-    
-/*   int right; */
-/*   int left; */
-/*   int bottom; */
-/*   int up; */
-    
+
+int get_level(); // Renvoie simplement le niveau courant
+int next_level(); // Passe au niveau suivant (+ chargement carte et texture)
+void reset_level(); // Remet le jeu au premier niveau (+ chargement carte et texture)
 
 
-/* }Node; */
+void draw_map(); // Dessine la carte à l'écran.
 
-
-int get_level();
-void reset_level();
-int next_level();
-
-void init_wall_tex(void);
-void read_map();
-
-
-/* void print_map(); */
-
-    
-void draw_map();
-
-bool isWall(int x, int y);
-bool isPlatform(int x, int y);
-bool isSolid(int x, int y);
+/*
+  Les trois fonctions suivantes font le pont entre la matrice de la carte courante et les coordonnées en pixels de la fenetre.
+  Elles permettent de déterminer si une coordonnée correspond à un élément de la carte.
+  Les paramètres entiers doivent être compris entre : 0 et WINDOW_WIDTH pour 'x', 0 et WINDOW_HEIGHT pour 'y'.
+ */
+bool isWall(int x, int y);  // Renvoie vrai si la coordonnée correspond à un mur extérieur
+bool isPlatform(int x, int y); // Renvoie vrai si la coordonnée correspond à une plateforme
+bool isSolid(int x, int y); // Renvoie vrai si mur extérieur OU plateforme
 
 
 
